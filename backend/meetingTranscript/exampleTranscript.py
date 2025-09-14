@@ -16,6 +16,9 @@ async def main():
         print(f"  Confidence: {idea.confidence_score:.2f}")
         print(f"  Speaker: {idea.user_name}")
         print(f"  Processed: {idea.processed_at}")
+        print(f"  Dated: {idea.is_dated}")
+        print(f"  Date: {idea.date}")
+
         print("-" * 30)
 
 

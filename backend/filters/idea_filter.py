@@ -1,11 +1,13 @@
 import openai
 import os
+from dotenv import load_dotenv
 import json
 from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass
 from datetime import datetime
 from openai import OpenAI
 
+load_dotenv()
 
 api_key = os.getenv("OPENAI_API_KEY")
 client = OpenAI(api_key=api_key)
@@ -22,6 +24,9 @@ class IdeaEvent:
     confidence_score: float
     idea_category: str
     processed_at: str
+    is_dated: bool
+    date: int
+
 
 
 class IdeaFilter:
@@ -69,12 +74,16 @@ class IdeaFilter:
         - Random thoughts without substance
         - Noise or spam
        
+        Additionally determine if it is idea with a set date to execute, and if so determine that date.
+
         Respond in JSON format:
         {{
             "is_idea": true/false,
             "confidence": 0.0-1.0,
             "category": "innovation|improvement|solution|strategy|creative|other",
             "idea": "the idea"
+            "is_dated": true/false,
+            "date": x/y/z
         }}
         """
        
@@ -97,7 +106,9 @@ class IdeaFilter:
             return (
                 result.get("is_idea", False),
                 result.get("confidence", 0.0),
-                result.get("category", "other")
+                result.get("category", "other"),
+                result.get("is_dated", False),
+                result.get("date", 0)
             )
         except Exception as e:
             print(f"Error analyzing text with OpenAI: {e}")
@@ -114,7 +125,7 @@ class IdeaFilter:
                 return None
         
             # Analyze with OpenAI
-            is_idea, confidence, category = await self.analyze_with_openai(text, source, context)
+            is_idea, confidence, category, is_dated, date = await self.analyze_with_openai(text, source, context)
            
             if is_idea and confidence > 0.5:  # Threshold for idea confidence
                 current_time = datetime.now()
@@ -127,7 +138,9 @@ class IdeaFilter:
                     event_time=current_time.isoformat(),
                     confidence_score=confidence,
                     idea_category=category,
-                    processed_at=current_time.isoformat()
+                    processed_at=current_time.isoformat(),
+                    is_dated = is_dated,
+                    date = date
                 )
            
             return None
@@ -155,6 +168,7 @@ class IdeaProcessor:
             print(f"   Source: {idea.source} | Category: {idea.idea_category} (Confidence: {idea.confidence_score:.2f})")
             print(f"   Text: {idea.message_text[:100]}...")
             print("-" * 50)
+            
        
         return idea
    
