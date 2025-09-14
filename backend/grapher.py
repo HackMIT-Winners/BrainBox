@@ -21,7 +21,7 @@ def get_embedding(text, model="text-embedding-3-small"):
     return client.embeddings.create(input = [text], model=model).data[0].embedding
 
 # ---------- New Ideas (id4 -> id10) ----------
-
+'''
 id1 = db.query('addIdea', {"user": "jeff", 
                            "text": "We need more marketting to promote our AI agents",
                            "embed": get_embedding("We need more marketing to promote our AI agents"),
@@ -162,6 +162,8 @@ res = db.query("linkIdeas", {
     "srcId": id6, "dstId": id5,
     "relation": "provides-data-for", "date": "09/20/2025"
 })
+'''
+
 
 def create_graph():
     allNodes = db.query("getAllIdeas", {})[0]['ideas']
@@ -176,6 +178,9 @@ def create_graph():
             weight = cosine_similarity.cosine_edge_weight(node['embed'], edge['embed'])
             print(weight)
             net.add_edge(node['id'], edge['id'], value=weight)
+    for n in net.nodes:
+        n["size"] = 100
+        n["font"]={"size": 100, "color": "#edfbff"}
     # Show node text automatically
     net.write_html("graph.html")
     # net.show_buttons(filter_=['physics'])
