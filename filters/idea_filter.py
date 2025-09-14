@@ -7,7 +7,7 @@ from datetime import datetime
 
 
 # Configure OpenAI API
-openai.api_key = os.getenv("OPENAI_API_KEY", "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")
+client = openai.OpenAI(api_key="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")
 
 
 @dataclass
@@ -41,9 +41,12 @@ class IdeaFilter:
             return False
            
         text_lower = text.lower()
-        return any(keyword in text_lower for keyword in self.idea_keywords)
+        #return any(keyword in text_lower for keyword in self.idea_keywords)
+        return True
    
     async def analyze_with_openai(self, text: str, source: str, context: str) -> Tuple[bool, float, str]:
+        print("test2")
+
         """
         Use OpenAI to analyze if text contains a valuable idea.
         Returns: (is_idea, confidence_score, category)
@@ -80,7 +83,9 @@ class IdeaFilter:
         """
        
         try:
-            response = await openai.ChatCompletion.acreate(
+            print("test1")
+
+            response = client.chat.completions.create(
                 model=self.model,
                 messages=[
                     {"role": "system", "content": "You are an AI assistant that identifies valuable ideas in text. Always respond with valid JSON."},
@@ -89,9 +94,8 @@ class IdeaFilter:
                 temperature=0.3,
                 max_tokens=500
             )
-            
             result = json.loads(response.choices[0].message.content.strip())
-           
+            print("test")
             return (
                 result.get("is_idea", False),
                 result.get("confidence", 0.0),
@@ -106,6 +110,7 @@ class IdeaFilter:
         Filter text to extract ideas.
         Returns IdeaEvent if it contains an idea, None otherwise.
         """
+        print("test4")
         try:
             # Quick pre-filter
             if not self.is_potential_idea(text):
@@ -113,7 +118,6 @@ class IdeaFilter:
            
             # Analyze with OpenAI
             is_idea, confidence, category = await self.analyze_with_openai(text, source, context)
-           
             if is_idea and confidence > 0.6:  # Threshold for idea confidence
                 current_time = datetime.now()
                 return IdeaEvent(
@@ -144,6 +148,7 @@ class IdeaProcessor:
    
     async def process_text(self, text: str, source: str, context: str, user_name: str = "unknown") -> Optional[IdeaEvent]:
         """Process text and return idea if found."""
+        print("test3")
         idea = await self.idea_filter.filter_text(text, source, context, user_name)
        
         if idea:

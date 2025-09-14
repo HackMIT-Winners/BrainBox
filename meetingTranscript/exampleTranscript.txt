@@ -1,22 +1,2 @@
-Alex (09:00 AM): Good morning, everyone. Let’s start with our weekly investment committee update.  
-Jamie (09:01 AM): Morning! On the pipeline front, we reviewed three new startup decks this week. One is a health-tech platform using AI for early cancer detection, another is a fintech app focused on micro-lending, and the third is a logistics company targeting last-mile delivery in tier-2 cities.  
-Taylor (09:03 AM): Interesting. Which one looks the most promising at this stage?  
-Jamie (09:04 AM): The health-tech startup. They’ve already run clinical trials with a small hospital group and are seeking $1.5M in seed funding.  
-Chris (09:05 AM): Financially, their projections are ambitious but not unrealistic. They’re projecting $5M ARR within three years.  
-Morgan (09:06 AM): From a market standpoint, early detection tech has huge potential. But regulatory hurdles could slow them down.  
-Alex (09:07 AM): Good point. Let’s assign due diligence—Jamie, you’ll handle tech validation, and Morgan, check regulatory pathways. We’ll reconvene next week.  
-Taylor (09:08 AM): On the fintech startup, their unit economics are still weak. CAC is high, and retention is low. I’d put them on hold for now.  
-Chris (09:09 AM): Agreed. Better to revisit them if they improve their metrics.  
-Morgan (09:10 AM): As for the logistics company, they’re tackling a real gap, but competition is fierce. We’d need a very strong moat to justify investment.  
-Alex (09:11 AM): Let’s keep them in “watch” status and request quarterly updates.  
-
-Jamie (09:12 AM): Quick portfolio update—our SaaS company, CloudBridge, just closed a big deal with a Fortune 500 client. That should boost revenue significantly this quarter.  
-Chris (09:13 AM): Yes, their MRR jumped 18% month-over-month. Looks like they’re on track for Series A in Q2.  
 Morgan (09:14 AM): On the flip side, GreenFarm, our agri-tech portfolio company, is facing supply chain issues. They’re asking if we can connect them with potential partners in Latin America.  
 Alex (09:15 AM): Let’s see if we can leverage our network there. I’ll reach out to a couple of contacts this week.  
-
-Taylor (09:16 AM): Before we wrap up, quick reminder—our investor update is scheduled for next Friday. We need draft slides ready by Tuesday.  
-Jamie (09:17 AM): Got it. I’ll handle pipeline updates and portfolio highlights.  
-Chris (09:18 AM): I’ll prepare the financial overview.  
-Morgan (09:18 AM): And I’ll cover market trends and opportunities.  
-Alex (09:19 AM): Perfect. Thanks, everyone. Meeting adjourned.  

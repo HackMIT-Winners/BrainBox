@@ -35,6 +35,7 @@ class TranscriptIdeaProcessor:
             # Split transcript into sentences or paragraphs for better analysis
             # You can adjust this splitting logic based on your needs
             segments = self._split_transcript(transcript_text)
+            print("SEGMENTS", len(segments))
             
             for i, segment in enumerate(segments):
                 if not segment.strip():
@@ -68,7 +69,6 @@ class TranscriptIdeaProcessor:
         
         # Filter out very short segments
         segments = [s.strip() for s in sentences if len(s.strip()) > 20]
-        
         return segments
     
     async def process_transcript_file(self, file_path: str, meeting_name: str = "Unknown Meeting", 
