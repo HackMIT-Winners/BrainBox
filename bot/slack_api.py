@@ -94,6 +94,8 @@ async def slack_events(request: Request):
                 # Resolve IDs to names
                 user_name = get_user_name(user_id) if user_id else "Unknown User"
                 channel_name = get_channel_name(channel_id) if channel_id else "Unknown Channel"
+
+                print(f"User: {user_name}, Channel: {channel_name}, Text: {text}")
                 
                 idea = await processor.process_slack_event({
                     "event": {
@@ -102,6 +104,9 @@ async def slack_events(request: Request):
                         "channel": channel_name,
                     }
                 })
+                if not idea:
+                    print("No idea found")
+                    return {"status": "ok"}
 
                 requests.get(f"{os.getenv("BACKEND_URL")}/transcript", params={
                     "text": idea.message_text,

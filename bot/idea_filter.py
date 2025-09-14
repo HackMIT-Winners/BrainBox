@@ -5,16 +5,14 @@ import json
 from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass
 from datetime import datetime
+from openai import OpenAI
+from supabase import create_client, Client
 
 load_dotenv()
 
 api_key = os.getenv("OPENAI_API_KEY")
-if not api_key:
-    raise RuntimeError("OPENAI_API_KEY is missing")
-
-
-# Configure OpenAI API
-client = openai.OpenAI(api_key=api_key)
+client = OpenAI(api_key=api_key)
+supabase: Client = create_client(os.getenv("SUPABASE_URL"), os.getenv("SUPABASE_KEY"))
 
 
 @dataclass
@@ -29,6 +27,9 @@ class IdeaEvent:
     confidence_score: float
     idea_category: str
     processed_at: str
+    is_dated: bool
+    date: str
+
 
 
 class IdeaFilter:
@@ -45,15 +46,11 @@ class IdeaFilter:
     def is_potential_idea(self, text: str) -> bool:
         """Quick pre-filter to check if text might contain an idea."""
         if not text or len(text.strip()) < 10:
-            return False
-           
+            return False  
         text_lower = text.lower()
-        #return any(keyword in text_lower for keyword in self.idea_keywords)
-        return True
+        return True # any(keyword in text_lower for keyword in self.idea_keywords)
    
-    async def analyze_with_openai(self, text: str, source: str, context: str) -> Tuple[bool, float, str]:
-        print("test2")
-
+    async def analyze_with_openai(self, text: str, source: str, context: str) -> Tuple[bool, float, str, bool, str]:
         """
         Use OpenAI to analyze if text contains a valuable idea.
         Returns: (is_idea, confidence_score, category)
@@ -80,18 +77,22 @@ class IdeaFilter:
         - Random thoughts without substance
         - Noise or spam
        
+        Additionally determine if it is idea with a set date to execute, and if so determine that date.
+
         Respond in JSON format:
         {{
             "is_idea": true/false,
             "confidence": 0.0-1.0,
             "category": "innovation|improvement|solution|strategy|creative|other",
             "idea": "the idea"
+            "is_dated": true/false,
+            "date": YYYY-MM-DD
         }}
+
+        Only return JSON. Do not return any other text. Just the JSON.
         """
        
         try:
-            print("test1")
-
             response = client.chat.completions.create(
                 model=self.model,
                 messages=[
@@ -101,31 +102,34 @@ class IdeaFilter:
                 temperature=0.3,
                 max_tokens=500
             )
+            
             result = json.loads(response.choices[0].message.content.strip())
-            print("test")
             return (
                 result.get("is_idea", False),
                 result.get("confidence", 0.0),
-                result.get("category", "other")
+                result.get("category", "other"),
+                result.get("is_dated", False),
+                result.get("date", "2000-01-01")
             )
         except Exception as e:
             print(f"Error analyzing text with OpenAI: {e}")
-            return False, 0.0, "error"
+            return False, 0.0, "error", False, "2000-01-01"
    
     async def filter_text(self, text: str, source: str, context: str, user_name: str = "unknown") -> Optional[IdeaEvent]:
         """
         Filter text to extract ideas.
         Returns IdeaEvent if it contains an idea, None otherwise.
         """
-        print("test4")
         try:
+            print("Filtering text...")
             # Quick pre-filter
             if not self.is_potential_idea(text):
                 return None
-           
+        
             # Analyze with OpenAI
-            is_idea, confidence, category = await self.analyze_with_openai(text, source, context)
-            if is_idea and confidence > 0.6:  # Threshold for idea confidence
+            is_idea, confidence, category, is_dated, date = await self.analyze_with_openai(text, source, context)
+           
+            if is_idea and confidence > 0.5:  # Threshold for idea confidence
                 current_time = datetime.now()
                 return IdeaEvent(
                     source=source,
@@ -136,7 +140,9 @@ class IdeaFilter:
                     event_time=current_time.isoformat(),
                     confidence_score=confidence,
                     idea_category=category,
-                    processed_at=current_time.isoformat()
+                    processed_at=current_time.isoformat(),
+                    is_dated = is_dated,
+                    date = date
                 )
            
             return None
@@ -155,7 +161,6 @@ class IdeaProcessor:
    
     async def process_text(self, text: str, source: str, context: str, user_name: str = "unknown") -> Optional[IdeaEvent]:
         """Process text and return idea if found."""
-        print("test3")
         idea = await self.idea_filter.filter_text(text, source, context, user_name)
        
         if idea:
@@ -165,6 +170,7 @@ class IdeaProcessor:
             print(f"   Source: {idea.source} | Category: {idea.idea_category} (Confidence: {idea.confidence_score:.2f})")
             print(f"   Text: {idea.message_text[:100]}...")
             print("-" * 50)
+            
        
         return idea
    
@@ -180,10 +186,16 @@ class IdeaProcessor:
             "event_time": idea.event_time,
             "confidence_score": idea.confidence_score,
             "idea_category": idea.idea_category,
-            "processed_at": idea.processed_at
+            "processed_at": idea.processed_at,
+            "is_dated": idea.is_dated,
+            "date": idea.date
         }
-       
-        # For now, just log to console
+
+        supabase.table("calendar").insert({
+            "date": idea.date or "2025-09-14",
+            "title": idea.message_text,
+            "description": "",
+        }).execute()
         print(f"💾 SAVED IDEA: {json.dumps(idea_data, indent=2)}")
    
     def get_recent_ideas(self, limit: int = 10) -> List[IdeaEvent]:
