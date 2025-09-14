@@ -7,7 +7,7 @@ from datetime import datetime
 
 
 # Configure OpenAI API
-client = openai.OpenAI(api_key="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")
+client = openai.OpenAI(api_key="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")
 
 
 @dataclass
@@ -85,7 +85,7 @@ class IdeaFilter:
         try:
             print("test1")
 
-            response = await client.chat.completions.create(
+            response = client.chat.completions.create(
                 model=self.model,
                 messages=[
                     {"role": "system", "content": "You are an AI assistant that identifies valuable ideas in text. Always respond with valid JSON."},
