@@ -5,7 +5,7 @@ import HomeBar from "@/components/HomeBar";
 export function GraphIframe() {
   return (
     <iframe
-      src="http://localhost:8000/graph"
+      src="/graph.html"
       style={{ width: "100%", height: 600, border: 0 }}
       title="graph"
     />
