@@ -1,7 +1,6 @@
 "use client";
 import React, { useMemo, useState, useEffect } from "react";
 import { createClient } from "@supabase/supabase-js";
-import Link from "next/link";
 import HomeBar from "@/components/HomeBar";
 
 // Initialize Supabase client
@@ -44,7 +43,7 @@ export default function ElegantCalendar() {
         return;
       }
       const eventsByDate: Record<string, CalendarEvent[]> = {};
-      data.forEach((ev: any) => {
+      data.forEach((ev) => {
         const iso = typeof ev.date === "string"
           ? ev.date.slice(0, 10)
           : new Date(ev.date).toISOString().slice(0, 10);

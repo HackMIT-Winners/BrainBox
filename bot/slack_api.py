@@ -4,6 +4,7 @@ import os
 from dotenv import load_dotenv
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
+from slackToGraph import SlackIdeaProcessor
 
 # Load environment variables
 load_dotenv()
@@ -17,6 +18,7 @@ slack_client = WebClient(token=slack_token)
 
 # Create router for Slack endpoints
 router = APIRouter(prefix="/slack", tags=["slack"])
+processor = SlackIdeaProcessor()
 
 class SlackEvent(BaseModel):
     token: str
@@ -92,7 +94,13 @@ async def slack_events(request: Request):
                 user_name = get_user_name(user_id) if user_id else "Unknown User"
                 channel_name = get_channel_name(channel_id) if channel_id else "Unknown Channel"
                 
-                print(f"User {user_name} said '{text}' in {channel_name}")
+                idea = await processor.process_slack_event({
+                    "event": {
+                        "text": text,
+                        "user": user_name,
+                        "channel": channel_name,
+                    }
+                })          
             case _:
                 raise HTTPException(status_code=400, detail="Invalid event type")
         
