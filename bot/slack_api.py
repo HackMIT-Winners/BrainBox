@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
 from slackToGraph import SlackIdeaProcessor
+import requests
 
 # Load environment variables
 load_dotenv()
@@ -100,7 +101,13 @@ async def slack_events(request: Request):
                         "user": user_name,
                         "channel": channel_name,
                     }
-                })          
+                })
+
+                requests.get(f"{os.getenv("BACKEND_URL")}/transcript", params={
+                    "text": idea.message_text,
+                    "meeting_name": "",
+                    "speaker_name": "",
+                })
             case _:
                 raise HTTPException(status_code=400, detail="Invalid event type")
         
