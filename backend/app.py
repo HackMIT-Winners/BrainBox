@@ -12,6 +12,8 @@ import cosine_similarity
 from pyvis.network import Network
 from fastapi.middleware.cors import CORSMiddleware
 
+app = FastAPI(title="KG Backend with HelixDB")
+
 similarity_threshold = 0.8  # Adjust this threshold as needed
 
 # --- Configure embedders (pick one) via env vars if you’ll use Embed()
@@ -31,7 +33,6 @@ def get_embedding(text, model="text-embedding-3-small"):
     text = text.replace("\n", " ")
     return client.embeddings.create(input = [text], model=model).data[0].embedding
 
-app = FastAPI(title="KG Backend with HelixDB")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # Adjust this to your frontend's origin in production
