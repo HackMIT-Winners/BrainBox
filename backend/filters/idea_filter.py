@@ -24,7 +24,8 @@ class IdeaEvent:
     confidence_score: float
     idea_category: str
     processed_at: str
-    predicted_time: int
+    is_dated: bool
+    date: int
 
 
 
@@ -105,9 +106,9 @@ class IdeaFilter:
             return (
                 result.get("is_idea", False),
                 result.get("confidence", 0.0),
-                result.get("category", "other")
+                result.get("category", "other"),
                 result.get("is_dated", False),
-                result.get("date")
+                result.get("date", 0)
             )
         except Exception as e:
             print(f"Error analyzing text with OpenAI: {e}")
