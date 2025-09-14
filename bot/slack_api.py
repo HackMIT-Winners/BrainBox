@@ -1,8 +1,5 @@
-from fastapi import FastAPI, Request, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi import APIRouter, Request, HTTPException
 from pydantic import BaseModel
-import uvicorn
-import json
 import os
 from dotenv import load_dotenv
 from slack_sdk import WebClient
@@ -18,8 +15,8 @@ if not slack_token:
 
 slack_client = WebClient(token=slack_token)
 
-app = FastAPI(title="Slack Bot", description="A FastAPI server for Slack events")
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
+# Create router for Slack endpoints
+router = APIRouter(prefix="/slack", tags=["slack"])
 
 class SlackEvent(BaseModel):
     token: str
@@ -62,11 +59,7 @@ def get_channel_name(channel_id: str) -> str:
         print(f"Error fetching channel info for {channel_id}: {e}")
         return channel_id
 
-@app.get("/")
-async def root():
-    return {"message": "Slack Bot is running!"}
-
-@app.post("/slack/events")
+@router.post("/events")
 async def slack_events(request: Request):
     """
     Handle Slack events including URL verification.
@@ -110,6 +103,3 @@ async def slack_events(request: Request):
     except Exception as e:
         print(f"Error processing Slack event: {e}")
         raise HTTPException(status_code=400, detail="Invalid request")
-
-if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8001)
