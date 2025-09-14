@@ -25,7 +25,7 @@ class IdeaEvent:
     idea_category: str
     processed_at: str
     is_dated: bool
-    date: int
+    date: str
 
 
 
@@ -83,8 +83,10 @@ class IdeaFilter:
             "category": "innovation|improvement|solution|strategy|creative|other",
             "idea": "the idea"
             "is_dated": true/false,
-            "date": x/y/z
+            "date": YYYY-MM-DD
         }}
+
+        Only return JSON. Do not return any other text. Just the JSON.
         """
        
         try:
@@ -99,20 +101,17 @@ class IdeaFilter:
             )
             
             result = json.loads(response.choices[0].message.content.strip())
-            print("HERE HERE HERE")
-            print(text)
-            print(result)
            
             return (
                 result.get("is_idea", False),
                 result.get("confidence", 0.0),
                 result.get("category", "other"),
                 result.get("is_dated", False),
-                result.get("date", 0)
+                result.get("date", "2000-01-01")
             )
         except Exception as e:
             print(f"Error analyzing text with OpenAI: {e}")
-            return False, 0.0, "error"
+            return False, 0.0, "error", False, "2000-01-01"
    
     async def filter_text(self, text: str, source: str, context: str, user_name: str = "unknown") -> Optional[IdeaEvent]:
         """
@@ -120,6 +119,7 @@ class IdeaFilter:
         Returns IdeaEvent if it contains an idea, None otherwise.
         """
         try:
+            print("Filtering text...")
             # Quick pre-filter
             if not self.is_potential_idea(text):
                 return None
@@ -184,7 +184,9 @@ class IdeaProcessor:
             "event_time": idea.event_time,
             "confidence_score": idea.confidence_score,
             "idea_category": idea.idea_category,
-            "processed_at": idea.processed_at
+            "processed_at": idea.processed_at,
+            "is_dated": idea.is_dated,
+            "date": idea.date
         }
        
         # For now, just log to console
