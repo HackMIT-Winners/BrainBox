@@ -6,7 +6,7 @@ import asyncio
 import json
 from typing import Dict, List, Optional
 from datetime import datetime
-from filters.idea_filter import IdeaFilter, IdeaProcessor, IdeaEvent
+from idea_filter import IdeaFilter, IdeaProcessor, IdeaEvent
 
 
 class SlackIdeaProcessor:
