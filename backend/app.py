@@ -54,7 +54,7 @@ class Edge(BaseModel):
 
 # --------- Endpoints -------
 
-path = "/Users/xiangzhousun/Documents/GitHub/BrainBox/backend/script.txt"
+path = "./script.txt"
 
 with open(path, "r", encoding="utf-8") as f:
     text_string = f.read()
