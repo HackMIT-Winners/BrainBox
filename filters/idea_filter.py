@@ -1,4 +1,4 @@
-import google.generativeai as genai
+import openai
 import os
 import json
 from typing import Dict, List, Optional, Tuple
@@ -6,8 +6,8 @@ from dataclasses import dataclass
 from datetime import datetime
 
 
-# Configure Gemini API
-genai.configure(api_key=os.getenv("GEMINI_APP_KEY", "AIzaSyDnHRdtHsEpFoE3k1UNJ5099vQEnBuoaLQ"))
+# Configure OpenAI API
+openai.api_key = os.getenv("OPENAI_API_KEY", "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")
 
 
 @dataclass
@@ -25,10 +25,10 @@ class IdeaEvent:
 
 
 class IdeaFilter:
-    """Universal filter to identify ideas in any text using Gemini AI."""
+    """Universal filter to identify ideas in any text using OpenAI API."""
    
     def __init__(self):
-        self.model = genai.GenerativeModel('gemini-1.5-flash')
+        self.model = "gpt-4o-mini"  # Using GPT-4o-mini for cost efficiency
         self.idea_keywords = [
             "idea", "suggestion", "proposal", "concept", "thought",
             "brainstorm", "innovation", "solution", "improvement",
@@ -43,9 +43,9 @@ class IdeaFilter:
         text_lower = text.lower()
         return any(keyword in text_lower for keyword in self.idea_keywords)
    
-    async def analyze_with_gemini(self, text: str, source: str, context: str) -> Tuple[bool, float, str]:
+    async def analyze_with_openai(self, text: str, source: str, context: str) -> Tuple[bool, float, str]:
         """
-        Use Gemini to analyze if text contains a valuable idea.
+        Use OpenAI to analyze if text contains a valuable idea.
         Returns: (is_idea, confidence_score, category)
         """
         prompt = f"""
@@ -80,8 +80,17 @@ class IdeaFilter:
         """
        
         try:
-            response = self.model.generate_content(prompt)
-            result = json.loads(response.text.strip())
+            response = await openai.ChatCompletion.acreate(
+                model=self.model,
+                messages=[
+                    {"role": "system", "content": "You are an AI assistant that identifies valuable ideas in text. Always respond with valid JSON."},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=0.3,
+                max_tokens=500
+            )
+            
+            result = json.loads(response.choices[0].message.content.strip())
            
             return (
                 result.get("is_idea", False),
@@ -89,7 +98,7 @@ class IdeaFilter:
                 result.get("category", "other")
             )
         except Exception as e:
-            print(f"Error analyzing text with Gemini: {e}")
+            print(f"Error analyzing text with OpenAI: {e}")
             return False, 0.0, "error"
    
     async def filter_text(self, text: str, source: str, context: str, user_name: str = "unknown") -> Optional[IdeaEvent]:
@@ -102,8 +111,8 @@ class IdeaFilter:
             if not self.is_potential_idea(text):
                 return None
            
-            # Analyze with Gemini
-            is_idea, confidence, category = await self.analyze_with_gemini(text, source, context)
+            # Analyze with OpenAI
+            is_idea, confidence, category = await self.analyze_with_openai(text, source, context)
            
             if is_idea and confidence > 0.6:  # Threshold for idea confidence
                 current_time = datetime.now()
