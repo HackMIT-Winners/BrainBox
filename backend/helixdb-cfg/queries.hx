@@ -18,3 +18,11 @@ QUERY getAllIdeas () =>
   // Select all continent nodes
   ideas <- N<Idea>
   RETURN ideas
+
+QUERY getAllConnectedIdeas (parent_id: ID) =>
+    // Select continent node with given ID
+    idea <- N<Idea>(parent_id)
+
+    // Select all countries linked to the continent
+    ideas <- idea::Out<Link>
+    RETURN ideas
