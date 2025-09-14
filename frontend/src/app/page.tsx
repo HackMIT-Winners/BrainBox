@@ -5,7 +5,7 @@ import HomeBar from "@/components/HomeBar";
 export function GraphIframe() {
   return (
     <iframe
-      src="/graph.html"
+      src="http://localhost:8000/graph"
       style={{ width: "100%", height: 600, border: 0 }}
       title="graph"
     />
@@ -54,7 +54,7 @@ export default function Home() {
             Welcome to BrainBox
           </h1>
           <p className="mt-6 text-2xl md:text-3xl text-gray-300">
-            Your AI-powered assistant for all your needs.
+            The agentic database for enterprise knowledge.
           </p>
         </div>
       </section>
