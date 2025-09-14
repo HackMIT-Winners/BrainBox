@@ -1,20 +1,38 @@
 import os
 from typing import List, Dict, Any
 from fastapi import FastAPI, HTTPException, Query
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 import helix
+from openai import OpenAI
+from dotenv import load_dotenv
+import cosine_similarity
+from pyvis.network import Network
 
 # --- Configure embedders (pick one) via env vars if you’ll use Embed()
 # os.environ["OPENAI_API_KEY"] = "sk-..."     # or GEMINI_API_KEY / VOYAGE_API_KEY
 
-# Connect to local HelixDB
-db = helix.Client(local=True, verbose=True)  # default port 6969
+net = Network(height="750px", width="100%", bgcolor="#222222", font_color="white")
+net.barnes_hut()
+
+load_dotenv()
+api_key = os.getenv("OPENAI_API_KEY")
+client = OpenAI(api_key=api_key)
+
+# Connect to a local helix instance
+db = helix.Client(local=True, verbose=True, port=6969)
+
+def get_embedding(text, model="text-embedding-3-small"):
+    text = text.replace("\n", " ")
+    return client.embeddings.create(input = [text], model=model).data[0].embedding
 
 app = FastAPI(title="KG Backend with HelixDB")
 
 # --------- Pydantic models
 class Node(BaseModel):
+    user: str
     text: str
+    date: str
 
 class Edge(BaseModel):
     srcId: int
@@ -26,15 +44,20 @@ class Edge(BaseModel):
 @app.post("/nodes")
 def add_node(node: Node):
     try:
-        res = db.query('addNode', {"text": node.text})
-        return {"ok": True, "node": res}
+        embedding = get_embedding(node.text)
+        id = db.query('addIdea', {"user": node.user, 
+                           "text": node.text,
+                           "embed": embedding,
+                           "date": node.date})[0]['n']['id']
+        
+        return {"ok": True, "node": id}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/edges")
 def add_edge(edge: Edge):
     try:
-        res = db.query("linkNodes", {"srcId": edge.srcId, "dstId": edge.dstId, "Relation": edge.Relation})
+        res = db.query("linkIdeas", {"srcId": edge.srcId, "dstId": edge.dstId, "Relation": edge.Relation})
         return {"ok": True, "edge": res}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -50,23 +73,29 @@ def search(q: str = Query(...), topK: int = Query(5, ge=1, le=50)):
 # Return Cytoscape-friendly graph JSON for visualization
 @app.get("/graph")
 def graph_json(limit: int = 200):
-    """
-    Minimal example: pull up to `limit` Things and RELATES_TO edges.
-    In practice you’d add HQL queries that return exactly what you want
-    (e.g., ego-net around a node, or paths between nodes), then call them here.
-    """
-    try:
-        # Example HQL inline: fetch nodes & edges (add a real query in your .hx for performance)
-        nodes = db.query("selectThings", {"limit": limit}) if db.has_query("selectThings") else []
-        edges = db.query("selectEdges", {"limit": limit}) if db.has_query("selectEdges") else []
+    try:     
+        net = Network(height="750px", width="100%", bgcolor="#222222", font_color="white")
+        net.barnes_hut()
 
-        # map to Cytoscape elements: [{ data: { id, label }}, { data: { id, source, target }}]
-        elements = []
-        for n in nodes:
-            elements.append({"data": {"id": n["id"], "label": n.get("title", n["id"])} })
-        for e in edges:
-            edge_id = f'{e["src"]}->{e["dst"]}'
-            elements.append({"data": {"id": edge_id, "source": e["src"], "target": e["dst"]}})
-        return {"elements": elements}
+        allNodes = db.query("getAllIdeas", {})[0]['ideas']
+        # print(allNodes)
+        for i, node in enumerate(allNodes):
+            net.add_node(node['id'], label=node['text'])
+            # print(node['id'])
+        for i, node in enumerate(allNodes):
+            allEdges = db.query("getAllConnectedIdeas", {"parent_id": node['id']})
+            # print(allEdges)
+            for edge in allEdges[0]['ideas']:
+                weight = cosine_similarity.cosine_edge_weight(node['embed'], edge['embed'])
+                print(weight)
+                net.add_edge(node['id'], edge['id'], value=weight)
+        
+        net.write_html("graph.html")
+        net.show_buttons(filter_=['physics'])
+        net.set_options('var options = { interaction: {hover: true}, physics: {stabilization: true} }')
+
+        html = net.generate_html()  # HTML string
+        return HTMLResponse(content=html)
+    
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
