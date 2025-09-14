@@ -1,6 +1,9 @@
 // Define a node type
 N::Idea {
-  text: String 
+  user: String,
+  text: String,
+  embed: [F32],
+  date: String
 }
 
 // Define an edge type
@@ -8,7 +11,8 @@ E::Link {
     From: Idea,
     To: Idea,
     Properties: {
-        Relation: String
+        relation: String,
+        date: String
     }
 }
 
