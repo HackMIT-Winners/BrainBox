@@ -1,0 +1,220 @@
+import google.generativeai as genai
+import os
+import json
+from typing import Dict, List, Optional, Tuple
+from dataclasses import dataclass
+from datetime import datetime
+
+
+# Configure Gemini API
+genai.configure(api_key=os.getenv("GEMINI_APP_KEY", "AIzaSyDnHRdtHsEpFoE3k1UNJ5099vQEnBuoaLQ"))
+
+
+@dataclass
+class SlackEvent:
+    """Represents a filtered Slack event containing an idea."""
+    user_name: str
+    channel_name: str
+    message_text: str
+    timestamp: int
+    event_time: str
+    confidence_score: float
+    idea_category: str
+    processed_at: str
+
+
+class IdeaFilter:
+    """Filters Slack messages to identify ideas using Gemini AI."""
+   
+    def __init__(self):
+        self.model = genai.GenerativeModel('gemini-1.5-flash')
+        self.idea_keywords = [
+            "idea", "suggestion", "proposal", "concept", "thought",
+            "brainstorm", "innovation", "solution", "improvement",
+            "feature", "enhancement", "recommendation", "insight"
+        ]
+       
+    def is_potential_idea(self, text: str) -> bool:
+        """Quick pre-filter to check if message might contain an idea."""
+        if not text or len(text.strip()) < 10:
+            return False
+           
+        text_lower = text.lower()
+        return any(keyword in text_lower for keyword in self.idea_keywords)
+   
+    async def analyze_with_gemini(self, message_text: str, user_name: str, channel_name: str) -> Tuple[bool, float, str]:
+        """
+        Use Gemini to analyze if a message contains a valuable idea.
+        Returns: (is_idea, confidence_score, category)
+        """
+        prompt = f"""
+        Analyze this Slack message to determine if it contains a valuable idea, suggestion, or insight.
+       
+        Message: "{message_text}"
+        User: {user_name}
+        Channel: {channel_name}
+       
+        Consider this an idea if it contains:
+        - New concepts or proposals
+        - Suggestions for improvement
+        - Creative solutions to problems
+        - Innovative thinking
+        - Actionable recommendations
+        - Strategic insights
+       
+        Exclude:
+        - Casual conversation
+        - Questions without suggestions
+        - Complaints without solutions
+        - Random thoughts without substance
+        - Noise or spam
+       
+        Respond in JSON format:
+        {{
+            "is_idea": true/false,
+            "confidence": 0.0-1.0,
+            "category": "innovation|improvement|solution|strategy|creative|other",
+            "idea": "the idea"
+        }}
+        """
+       
+        try:
+            response = self.model.generate_content(prompt)
+            result = json.loads(response.text.strip())
+           
+            return (
+                result.get("is_idea", False),
+                result.get("confidence", 0.0),
+                result.get("category", "other"),
+            )
+        except Exception as e:
+            print(f"Error analyzing message with Gemini: {e}")
+            return False, 0.0, "error"
+   
+    async def filter_slack_event(self, event_data: Dict) -> Optional[SlackEvent]:
+        """
+        Filter a Slack event to extract ideas.
+        Returns SlackEvent if it contains an idea, None otherwise.
+        """
+        try:
+            # Extract event details
+            event = event_data.get("event", {})
+            text = event.get("text", "")
+            user_id = event.get("user", "")
+            channel_id = event.get("channel", "")
+            event_time = event_data.get("event_time", 0)
+           
+            # Quick pre-filter
+            if not self.is_potential_idea(text):
+                return None
+           
+            # Get user and channel names (you might want to pass these from the main app)
+            user_name = f"user_{user_id}"  # You can enhance this with actual name resolution
+            channel_name = f"channel_{channel_id}"  # You can enhance this with actual name resolution
+           
+            # Analyze with Gemini
+            is_idea, confidence, category = await self.analyze_with_gemini(text, user_name, channel_name)
+           
+            if is_idea and confidence > 0.6:  # Threshold for idea confidence
+                return SlackEvent(
+                    user_name=user_name,
+                    channel_name=channel_name,
+                    message_text=text,
+                    timestamp=event_time,
+                    event_time=datetime.fromtimestamp(event_time).isoformat() if event_time else "",
+                    confidence_score=confidence,
+                    idea_category=category,
+                    processed_at=datetime.now().isoformat()
+                )
+           
+            return None
+           
+        except Exception as e:
+            print(f"Error filtering Slack event: {e}")
+            return None
+
+
+class IdeaProcessor:
+    """Processes and stores filtered ideas."""
+   
+    def __init__(self, idea_filter: IdeaFilter):
+        self.idea_filter = idea_filter
+        self.ideas: List[SlackEvent] = []
+   
+    async def process_slack_event(self, event_data: Dict) -> Optional[SlackEvent]:
+        """Process a Slack event and return idea if found."""
+        idea = await self.idea_filter.filter_slack_event(event_data)
+       
+        if idea:
+            self.ideas.append(idea)
+            await self.save_idea(idea)
+            print(f"💡 IDEA FOUND: {idea.user_name} in {idea.channel_name}")
+            print(f"   Category: {idea.idea_category} (Confidence: {idea.confidence_score:.2f})")
+            print(f"   Text: {idea.message_text[:100]}...")
+            print("-" * 50)
+       
+        return idea
+   
+    async def save_idea(self, idea: SlackEvent):
+        """Save idea to storage (implement your preferred storage method)."""
+        # TODO: Implement storage (database, file, etc.)
+        idea_data = {
+            "user_name": idea.user_name,
+            "channel_name": idea.channel_name,
+            "message_text": idea.message_text,
+            "timestamp": idea.timestamp,
+            "event_time": idea.event_time,
+            "confidence_score": idea.confidence_score,
+            "idea_category": idea.idea_category,
+            "processed_at": idea.processed_at
+        }
+       
+        # For now, just log to console
+        print(f"💾 SAVED IDEA: {json.dumps(idea_data, indent=2)}")
+   
+    def get_recent_ideas(self, limit: int = 10) -> List[SlackEvent]:
+        """Get recent ideas."""
+        return sorted(self.ideas, key=lambda x: x.timestamp, reverse=True)[:limit]
+   
+    def get_ideas_by_category(self, category: str) -> List[SlackEvent]:
+        """Get ideas by category."""
+        return [idea for idea in self.ideas if idea.idea_category == category]
+
+
+# Usage example for integration with your Slack bot
+async def process_slack_message(event_data: Dict) -> Optional[SlackEvent]:
+    """
+    Main function to process Slack messages and extract ideas.
+    Call this from your Slack bot's event handler.
+    """
+    idea_filter = IdeaFilter()
+    processor = IdeaProcessor(idea_filter)
+   
+    return await processor.process_slack_event(event_data)
+
+
+# Example usage in your app.py:
+"""
+from slackToGragh import process_slack_message
+
+
+@app.post("/slack/events")
+async def slack_events(request: Request):
+    try:
+        body = await request.json()
+       
+        if body.get("type") == "event_callback":
+            event = body.get("event")
+            if event and event.get("type") == "message":
+                # Process for ideas
+                idea = await process_slack_message(body)
+                if idea:
+                    print(f"Found idea: {idea.message_text}")
+       
+        return {"status": "ok"}
+    except Exception as e:
+        print(f"Error: {e}")
+        raise HTTPException(status_code=400, detail="Invalid request")
+"""
+
+
