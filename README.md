@@ -11,4 +11,4 @@ BrainBox connects to the platforms employees use every day - Slack, Zoom, Notion
 
 ![Calendar](docs/calendar.png)
 
-![Knowledge Network](docks/knowledge.png)
+![Knowledge Network](docs/knowledge.png)
