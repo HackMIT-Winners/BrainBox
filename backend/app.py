@@ -53,7 +53,7 @@ class Edge(BaseModel):
 
 # --------- Endpoints -------
 
-path = "/Users/xiangzhousun/Documents/GitHub/BrainBox/backend/meetingTranscript/exampleTranscript.txt"
+path = "/Users/xiangzhousun/Documents/GitHub/BrainBox/backend/script.txt"
 
 with open(path, "r", encoding="utf-8") as f:
     text_string = f.read()
@@ -61,32 +61,31 @@ with open(path, "r", encoding="utf-8") as f:
 @app.get("/transcript")
 async def process_transcript(text: str, meeting_name: str, speaker_name: str):
     try:
-        print(os.getenv("OPENAI_API_KEY"))
         print("Processing transcript...")
         idea_events = await transcript_processor.process_transcript_file(path, meeting_name, speaker_name)
+        
         embeddings = []
         ids = []
         print(f"Number of ideas extracted: {len(idea_events)}")
         
-        
         for idea_event in idea_events:
-            print(type(idea_event))
-            embedding = get_embedding(idea_event['message_text'])
+            embedding = get_embedding(idea_event.message_text)
             embeddings.append(embedding)
-            id = db.query('addIdea', {"user": idea_event['user_name'], 
-                               "text": idea_event['message_text'],
-                               "embed": embedding,
-                               "date": idea_event['event_time']})[0]['n']['id']
+            id = db.query('addIdea', {"user": idea_event.user_name, 
+                                "text": idea_event.message_text,
+                                "embed": embedding,
+                                "date": idea_event.event_time})[0]['n']['id']
             ids.append(id)
             print(f"Node ID: {id} (type: {type(id)})")
-        return idea_events
         
         for i in range(len(idea_events)):
             for j in range(i+1, len(idea_events)):
                 weight = cosine_similarity.cosine_edge_weight(embeddings[i], embeddings[j])
                 if weight >= similarity_threshold:  # Adjust threshold as needed 
                     res = db.query("linkIdeas", {"srcId": id[i], "dstId": id[j], "Relation": ""})
-        
+        print("-------TRANSCRIPTION COMPLETE-------")
+        return idea_events
+    
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))  
 

@@ -42,10 +42,9 @@ class IdeaFilter:
     def is_potential_idea(self, text: str) -> bool:
         """Quick pre-filter to check if text might contain an idea."""
         if not text or len(text.strip()) < 10:
-            return False
-           
+            return False  
         text_lower = text.lower()
-        return any(keyword in text_lower for keyword in self.idea_keywords)
+        return True # any(keyword in text_lower for keyword in self.idea_keywords)
    
     async def analyze_with_openai(self, text: str, source: str, context: str) -> Tuple[bool, float, str]:
         """
@@ -99,6 +98,9 @@ class IdeaFilter:
             )
             
             result = json.loads(response.choices[0].message.content.strip())
+            print("HERE HERE HERE")
+            print(text)
+            print(result)
            
             return (
                 result.get("is_idea", False),
@@ -120,11 +122,11 @@ class IdeaFilter:
             # Quick pre-filter
             if not self.is_potential_idea(text):
                 return None
-           
+        
             # Analyze with OpenAI
             is_idea, confidence, category, is_dated, date = await self.analyze_with_openai(text, source, context)
            
-            if is_idea and confidence > 0.6:  # Threshold for idea confidence
+            if is_idea and confidence > 0.5:  # Threshold for idea confidence
                 current_time = datetime.now()
                 return IdeaEvent(
                     source=source,
