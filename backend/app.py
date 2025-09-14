@@ -3,11 +3,16 @@ from typing import List, Dict, Any
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
+import grapher
+import meetingTranscript.TranscriptToGragh as transcript_processor
 import helix
 from openai import OpenAI
 from dotenv import load_dotenv
 import cosine_similarity
 from pyvis.network import Network
+from fastapi.middleware.cors import CORSMiddleware
+
+similarity_threshold = 0.8  # Adjust this threshold as needed
 
 # --- Configure embedders (pick one) via env vars if you’ll use Embed()
 # os.environ["OPENAI_API_KEY"] = "sk-..."     # or GEMINI_API_KEY / VOYAGE_API_KEY
@@ -27,6 +32,13 @@ def get_embedding(text, model="text-embedding-3-small"):
     return client.embeddings.create(input = [text], model=model).data[0].embedding
 
 app = FastAPI(title="KG Backend with HelixDB")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Adjust this to your frontend's origin in production
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # --------- Pydantic models
 class Node(BaseModel):
@@ -39,7 +51,44 @@ class Edge(BaseModel):
     dstId: int
     Relation: str
 
-# --------- Endpoints
+# --------- Endpoints -------
+
+path = "/Users/xiangzhousun/Documents/GitHub/BrainBox/backend/meetingTranscript/exampleTranscript.txt"
+
+with open(path, "r", encoding="utf-8") as f:
+    text_string = f.read()
+
+@app.get("/transcript")
+async def process_transcript(text: str, meeting_name: str, speaker_name: str):
+    try:
+        print(os.getenv("OPENAI_API_KEY"))
+        print("Processing transcript...")
+        idea_events = await transcript_processor.process_transcript_file(path, meeting_name, speaker_name)
+        embeddings = []
+        ids = []
+        print(f"Number of ideas extracted: {len(idea_events)}")
+        
+        
+        for idea_event in idea_events:
+            print(type(idea_event))
+            embedding = get_embedding(idea_event['message_text'])
+            embeddings.append(embedding)
+            id = db.query('addIdea', {"user": idea_event['user_name'], 
+                               "text": idea_event['message_text'],
+                               "embed": embedding,
+                               "date": idea_event['event_time']})[0]['n']['id']
+            ids.append(id)
+            print(f"Node ID: {id} (type: {type(id)})")
+        return idea_events
+        
+        for i in range(len(idea_events)):
+            for j in range(i+1, len(idea_events)):
+                weight = cosine_similarity.cosine_edge_weight(embeddings[i], embeddings[j])
+                if weight >= similarity_threshold:  # Adjust threshold as needed 
+                    res = db.query("linkIdeas", {"srcId": id[i], "dstId": id[j], "Relation": ""})
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))  
 
 @app.post("/nodes")
 def add_node(node: Node):
@@ -62,39 +111,11 @@ def add_edge(edge: Edge):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/search")
-def search(q: str = Query(...), topK: int = Query(5, ge=1, le=50)):
-    try:
-        res = db.query("semanticSearch", {"q": q, "topK": topK})
-        return {"ok": True, "results": res}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-# Return Cytoscape-friendly graph JSON for visualization
+# Return a PyVis graph for visualization
 @app.get("/graph")
-def graph_json(limit: int = 200):
-    try:     
-        net = Network(height="750px", width="100%", bgcolor="#222222", font_color="white")
-        net.barnes_hut()
-
-        allNodes = db.query("getAllIdeas", {})[0]['ideas']
-        # print(allNodes)
-        for i, node in enumerate(allNodes):
-            net.add_node(node['id'], label=node['text'])
-            # print(node['id'])
-        for i, node in enumerate(allNodes):
-            allEdges = db.query("getAllConnectedIdeas", {"parent_id": node['id']})
-            # print(allEdges)
-            for edge in allEdges[0]['ideas']:
-                weight = cosine_similarity.cosine_edge_weight(node['embed'], edge['embed'])
-                print(weight)
-                net.add_edge(node['id'], edge['id'], value=weight)
-        
-        net.write_html("graph.html")
-        net.show_buttons(filter_=['physics'])
-        net.set_options('var options = { interaction: {hover: true}, physics: {stabilization: true} }')
-
-        html = net.generate_html()  # HTML string
+def graph_json(limit: int = 2000):
+    try:
+        html = grapher.create_graph()
         return HTMLResponse(content=html)
     
     except Exception as e:

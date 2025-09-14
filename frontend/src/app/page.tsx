@@ -2,8 +2,40 @@ import Image from "next/image";
 import Link from "next/link";
 import HomeBar from "@/components/HomeBar";
 
+export function GraphIframe() {
+  return (
+    <iframe
+      src="http://localhost:8000/graph"
+      style={{ width: "100%", height: 600, border: 0 }}
+      title="graph"
+    />
+  );
+}
+
+async function callBackend() {
+  const params = new URLSearchParams({
+    text: "/Users/xiangzhousun/Documents/GitHub/BrainBox/backend/script.txt",
+    meeting_name: "Example Meeting",
+    speaker_name: "John Doe",
+  });
+
+try {
+  const response = await fetch(`http://localhost:8000/transcript?${params.toString()}`);
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+  const data = await response.json();
+  alert(data.message);
+} catch (error) {
+  console.error("Error calling backend:", error);
+  alert("Failed to call backend. Check the console for details.");
+}
+}
+callBackend()
+
 export default function Home() {
   return (
+    
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white">
       <HomeBar />
       {/* Hero Section */}
@@ -43,13 +75,7 @@ export default function Home() {
           Knowledge Network
         </h2>
         <div className="w-full max-w-4xl flex flex-col items-center">
-          {/* Placeholder for future graphic */}
-          <div className="w-full h-64 bg-white/10 border border-white/10 rounded-2xl flex items-center justify-center mb-6">
-            <span className="text-gray-400 text-xl">[Knowledge Network Graphic Coming Soon]</span>
-          </div>
-          <p className="text-lg text-gray-300 text-center max-w-2xl">
-            The Knowledge Network will visualize and connect your ideas, resources, and insights—helping you discover, organize, and grow your knowledge like never before.
-          </p>
+          <GraphIframe />
         </div>
       </section>
 

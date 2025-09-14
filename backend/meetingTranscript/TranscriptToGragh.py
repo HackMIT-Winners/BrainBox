@@ -9,6 +9,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from filters.idea_filter import IdeaFilter, IdeaProcessor, IdeaEvent
 
 
+
 class TranscriptIdeaProcessor:
     """Processes meeting transcripts to extract ideas using the shared IdeaFilter."""
    
@@ -35,7 +36,6 @@ class TranscriptIdeaProcessor:
             # Split transcript into sentences or paragraphs for better analysis
             # You can adjust this splitting logic based on your needs
             segments = self._split_transcript(transcript_text)
-            print("SEGMENTS", len(segments))
             
             for i, segment in enumerate(segments):
                 if not segment.strip():
@@ -69,6 +69,7 @@ class TranscriptIdeaProcessor:
         
         # Filter out very short segments
         segments = [s.strip() for s in sentences if len(s.strip()) > 20]
+        
         return segments
     
     async def process_transcript_file(self, file_path: str, meeting_name: str = "Unknown Meeting", 
@@ -87,7 +88,7 @@ class TranscriptIdeaProcessor:
         try:
             with open(file_path, 'r', encoding='utf-8') as file:
                 transcript_text = file.read()
-            print("TRANSCRIPT LENGTH", len(transcript_text))
+            
             return await self.process_transcript(transcript_text, meeting_name, speaker_name)
             
         except Exception as e:

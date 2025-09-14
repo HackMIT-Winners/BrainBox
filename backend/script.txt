@@ -1,0 +1,35 @@
+Sarah (CEO): Good morning, everyone. Thanks for joining. Today’s focus is on our AI Agent Platform roadmap—specifically customer use cases, technical progress, and next week’s investor demo. Let’s dive in.
+
+David (Head of Product): I’ll kick things off. From the customer discovery sessions, the top requests are:
+
+Workflow automation for marketing teams.
+
+A personal research assistant for enterprise analysts.
+
+Customer support triage.
+
+We’ll need to prioritize which ones make it into the demo.
+
+Priya (CTO): From the tech side, the core agent framework is stable. However, multi-agent coordination still has issues with conflicting instructions. We’re testing a new arbitration layer to resolve that.
+
+Ethan (Lead Engineer): On embeddings, we’ve integrated OpenAI’s latest model. Similarity search is fast, but memory persistence across sessions is still buggy. I can patch this by midweek.
+
+Lisa (Head of Marketing): For the investor demo, I suggest we focus on one high-impact scenario: a “research assistant” agent that can summarize reports and suggest insights. That resonates with enterprise investors.
+
+Sarah (CEO): Agreed. Let’s align tasks:
+
+David, draft the demo script emphasizing the “research assistant” scenario. Deadline: Wednesday.
+
+Priya, oversee the arbitration layer fix. Work with Ethan to ensure persistence issues are resolved. Deadline: Friday.
+
+Lisa, prepare the pitch slides and messaging. Coordinate with design for visuals. Deadline: Thursday.
+
+David (Head of Product): Got it, I’ll prepare both a script and a flow diagram for how the agent interacts with the user.
+
+Priya (CTO): Noted. Ethan, let’s set up a sync tomorrow afternoon to test arbitration fixes.
+
+Ethan (Lead Engineer): Works for me. I’ll also push logs to the shared repo so QA can start validating.
+
+Lisa (Head of Marketing): I’ll send a first draft of slides by Thursday morning so we have time for feedback.
+
+Sarah (CEO): Perfect. One last point: let’s schedule a dry run on Friday at 3 PM. Everyone should be ready with their deliverables.
